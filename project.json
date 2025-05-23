@@ -1,0 +1,18 @@
+{
+    "compiler": "g++",
+  
+    "libraries": [
+        "sfml-window",
+        "sfml-system",
+        "sfml-graphics"
+    ],
+  
+    "excludes": [
+        "build",
+        ".git"
+    ],
+  
+    "extension": ".sh",
+  
+    "name": "build/game"
+}
