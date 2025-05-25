@@ -2,6 +2,8 @@
 #define HANDLE_EVENTS_H
 #include <SFML/Graphics.hpp>
 
-void handleEvents(sf::RenderWindow& win);
+#include "../Games/game.h"
+
+void handleEvents(sf::RenderWindow& win, Game& game);
 
 #endif

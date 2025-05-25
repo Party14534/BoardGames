@@ -8,7 +8,7 @@ int main() {
         
     while(win.isOpen()) { if(framePassed(deltaT, 60.f, false)) {
         // Handle Events
-        handleEvents(win);
+        handleEvents(win, game);
 
         // Handle Input
 
