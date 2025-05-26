@@ -3,6 +3,7 @@ g++ \
 /home/party14534/Code/BoardGames/src/Internal/fpsHandling.cpp \
 /home/party14534/Code/BoardGames/src/Internal/hashFunction.cpp \
 /home/party14534/Code/BoardGames/src/Games/MiniShogi/miniShogi.cpp \
+/home/party14534/Code/BoardGames/src/Games/MiniShogi/Bots/minOppMoves.cpp \
 /home/party14534/Code/BoardGames/src/Games/MiniShogi/Pieces/king.cpp \
 /home/party14534/Code/BoardGames/src/Games/MiniShogi/Pieces/goldGeneral.cpp \
 /home/party14534/Code/BoardGames/src/Games/MiniShogi/Pieces/silverGeneral.cpp \

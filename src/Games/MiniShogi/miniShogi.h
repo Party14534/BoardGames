@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <vector>
 #include <iostream>
+#include <cstdint>
 
 #include "../game.h"
 #include "../../Internal/hashFunction.h"
@@ -60,7 +61,8 @@ private:
     bool choosingMove;
 
     void SetUpBoard();
-    bool GetAllMoves();
+    int GetAllMoves(miniShogiBoard& board, bool side);
+    int GetCountOfMoves(miniShogiBoard& board, bool side);
     std::optional<MiniShogiMove> PosToMove();
     bool PosInMoves(sf::Vector2i pos);
     bool PieceIsPromotable(char type);
@@ -69,6 +71,9 @@ private:
     std::vector<std::vector<bool>> GetAttackingBitmask(bool side);
     void copyMiniShogiBoard(miniShogiBoard& board, miniShogiBoard& src);
     void PlayMoveOnBoard(MiniShogiMove& move, miniShogiBoard& board);
+
+    // AIs
+    MiniShogiMove MinOppMoves();
 };
 
 class King : public MiniShogiPiece {

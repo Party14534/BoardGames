@@ -18,7 +18,7 @@ MiniShogiGame::MiniShogiGame() {
     inCaptured = false;
 
     SetUpBoard();
-    GetAllMoves();
+    GetAllMoves(board, PLAYER_1);
 
     cursor.setSize({SQUARE_SIZE - 1, SQUARE_SIZE - 1});
     cursor.setOrigin({SQUARE_SIZE / 2 + 2.5f, SQUARE_SIZE / 2 + 2.5f});
@@ -133,17 +133,21 @@ void MiniShogiGame::PlayMove(Move* move) {
     currentMoves.clear();
     allMoves.clear(); 
 
-    bool hasMoves = GetAllMoves();
-    if (!hasMoves) {
+    int moveCount = GetAllMoves(board, turn % 2);
+    if (moveCount == 0) {
         std::string player = (turn % 2) ? "Red" : "Blue";
         std::cout << player << " player wins!\n";
         exit(0);
     }
+
+    if (turn % 2 == 0) {
+        MiniShogiMove move = MinOppMoves();
+        PlayMove(&move);
+    }
 }
 
-bool MiniShogiGame::GetAllMoves() {
-    bool side = turn % 2;
-    bool foundMoves = false;
+int MiniShogiGame::GetAllMoves(miniShogiBoard& board, bool side) {
+    int moveCount = 0;
     for (int i = 0; i < 5; i++) {
         for (int j = 0; j < 5; j++) {
             if (board[i][j].type == '\0' || board[i][j].side != side) {
@@ -155,11 +159,30 @@ bool MiniShogiGame::GetAllMoves() {
             CullInvalidMoves(moves);
             if (moves.size() == 0) continue;
             allMoves[{i, j}] = moves;
-            foundMoves = true;
+            moveCount += moves.size();
         }
     }
 
-    return foundMoves;
+    return moveCount;
+}
+
+int MiniShogiGame::GetCountOfMoves(miniShogiBoard& board, bool side) {
+    int moveCount = 0;
+    for (int i = 0; i < 5; i++) {
+        for (int j = 0; j < 5; j++) {
+            if (board[i][j].type == '\0' || board[i][j].side != side) {
+                continue;
+            }
+
+            std::vector<MiniShogiMove> moves;
+            board[i][j].GetMoves(board, moves);
+            CullInvalidMoves(moves);
+            if (moves.size() == 0) continue;
+            moveCount += moves.size();
+        }
+    }
+
+    return moveCount;
 }
 
 void MiniShogiGame::MoveCursor(sf::Vector2i dir) {
