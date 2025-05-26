@@ -2,11 +2,14 @@
 #define MINISHOGI_H
 #include <SFML/Graphics.hpp>
 #include <SFML/System/Vector2.hpp>
+#include <map>
 #include <optional>
+#include <unordered_map>
 #include <vector>
 #include <iostream>
 
 #include "../game.h"
+#include "../../Internal/hashFunction.h"
 
 #define PLAYER_1 true
 #define PLAYER_2 false
@@ -20,6 +23,7 @@ class MiniShogiMove : public Move {
 public:
     sf::Vector2u start;
     sf::Vector2u end;
+    bool invalid = false;
 
     MiniShogiMove(sf::Vector2u _start, sf::Vector2u _end);
 };
@@ -49,14 +53,22 @@ private:
     std::vector<std::vector<MiniShogiPiece>> capturedPieces;
     std::vector<sf::Vector2i> playerCursorPos;
     std::vector<MiniShogiMove> currentMoves;
+    std::unordered_map<sf::Vector2i, std::vector<MiniShogiMove>, Vector2iHash> allMoves;
     int capturedCursorIndex;
     int currentPlayer;
     bool inCaptured;
     bool choosingMove;
 
     void SetUpBoard();
+    bool GetAllMoves();
     std::optional<MiniShogiMove> PosToMove();
     bool PosInMoves(sf::Vector2i pos);
+    bool PieceIsPromotable(char type);
+    void CullInvalidMoves(std::vector<MiniShogiMove>& moves);
+    bool IsKingExposed(bool side, miniShogiBoard& board);
+    std::vector<std::vector<bool>> GetAttackingBitmask(bool side);
+    void copyMiniShogiBoard(miniShogiBoard& board, miniShogiBoard& src);
+    void PlayMoveOnBoard(MiniShogiMove& move, miniShogiBoard& board);
 };
 
 class King : public MiniShogiPiece {
@@ -64,7 +76,42 @@ public:
     King(sf::Vector2u _pos, bool _side);
 };
 
+class GoldGeneral : public MiniShogiPiece {
+public:
+    GoldGeneral(sf::Vector2u _pos, bool _side);
+};
+
+class SilverGeneral : public MiniShogiPiece {
+public:
+    SilverGeneral(sf::Vector2u _pos, bool _side);
+};
+
+class Bishop : public MiniShogiPiece {
+public:
+    Bishop(sf::Vector2u _pos, bool _side);
+};
+
+class Rook : public MiniShogiPiece {
+public:
+    Rook(sf::Vector2u _pos, bool _side);
+};
+
+class Pawn : public MiniShogiPiece {
+public:
+    Pawn(sf::Vector2u _pos, bool _side);
+};
+
 // PIECE MOVES
 void GetKingMoves(miniShogiBoard& board, std::vector<MiniShogiMove>& moves, MiniShogiPiece& piece);
+
+void GetGoldGeneralMoves(miniShogiBoard& board, std::vector<MiniShogiMove>& moves, MiniShogiPiece& piece);
+
+void GetSilverGeneralMoves(miniShogiBoard& board, std::vector<MiniShogiMove>& moves, MiniShogiPiece& piece);
+
+void GetBishopMoves(miniShogiBoard& board, std::vector<MiniShogiMove>& moves, MiniShogiPiece& piece);
+
+void GetRookMoves(miniShogiBoard& board, std::vector<MiniShogiMove>& moves, MiniShogiPiece& piece);
+
+void GetPawnMoves(miniShogiBoard& board, std::vector<MiniShogiMove>& moves, MiniShogiPiece& piece);
 
 #endif

@@ -1,11 +1,5 @@
 #include "miniShogi.h"
-#include <SFML/Graphics/Font.hpp>
-#include <SFML/Graphics/Rect.hpp>
-#include <SFML/Graphics/RectangleShape.hpp>
-#include <SFML/System/Vector2.hpp>
 #include <algorithm>
-#include <optional>
-#include <vector>
 
 /*
  * GAME LOGIC
@@ -15,9 +9,7 @@ MiniShogiGame::MiniShogiGame() {
     board = std::vector<std::vector<MiniShogiPiece>>(5, std::vector<MiniShogiPiece>(5));
     capturedPieces = std::vector<std::vector<MiniShogiPiece>>(2, std::vector<MiniShogiPiece>());
 
-    board[0][0] = King({0,0}, PLAYER_1);
-    board[4][4] = King({4,4}, PLAYER_2);
-    
+
     playerCursorPos = std::vector<sf::Vector2i>(2);
     playerCursorPos[0] = {0, 0};
     playerCursorPos[1] = {4, 4};
@@ -25,11 +17,34 @@ MiniShogiGame::MiniShogiGame() {
     currentPlayer = 0;
     inCaptured = false;
 
+    SetUpBoard();
+    GetAllMoves();
+
     cursor.setSize({SQUARE_SIZE - 1, SQUARE_SIZE - 1});
     cursor.setOrigin({SQUARE_SIZE / 2 + 2.5f, SQUARE_SIZE / 2 + 2.5f});
     cursor.setFillColor(sf::Color::Transparent);
     cursor.setOutlineThickness(10.f);
     cursor.setOutlineColor(sf::Color::Cyan);
+}
+
+void MiniShogiGame::SetUpBoard() {
+    board[0][0] = King({0, 0}, PLAYER_1);
+    board[4][4] = King({4, 4}, PLAYER_2);
+
+    board[1][0] = GoldGeneral({1, 0}, PLAYER_1);
+    board[3][4] = GoldGeneral({3, 4}, PLAYER_2);
+
+    board[2][0] = SilverGeneral({2, 0}, PLAYER_1);
+    board[2][4] = SilverGeneral({2, 4}, PLAYER_2);
+
+    board[3][0] = Bishop({3, 0}, PLAYER_1);
+    board[1][4] = Bishop({1, 4}, PLAYER_2);
+    
+    board[4][0] = Rook({4, 0}, PLAYER_1);
+    board[0][4] = Rook({0, 4}, PLAYER_2);
+
+    board[0][1] = Pawn({0, 1}, PLAYER_1);
+    board[4][3] = Pawn({4, 3}, PLAYER_2);
 }
 
 void MiniShogiGame::Draw(sf::RenderWindow& win) {
@@ -102,11 +117,49 @@ void MiniShogiGame::PlayMove(Move* move) {
     }
 
     piece.pos = end;
+
+    // Promote piece
+    if (piece.side == PLAYER_1 && end.y == 4) {
+        piece.type = toupper(piece.type);
+    }
+    else if (piece.side == PLAYER_2 && end.y == 0) {
+        piece.type = toupper(piece.type);
+    }
+
     board[end.x][end.y] = piece;
     turn++;
     currentPlayer = !currentPlayer;
     choosingMove = false;
     currentMoves.clear();
+    allMoves.clear(); 
+
+    bool hasMoves = GetAllMoves();
+    if (!hasMoves) {
+        std::string player = (turn % 2) ? "Red" : "Blue";
+        std::cout << player << " player wins!\n";
+        exit(0);
+    }
+}
+
+bool MiniShogiGame::GetAllMoves() {
+    bool side = turn % 2;
+    bool foundMoves = false;
+    for (int i = 0; i < 5; i++) {
+        for (int j = 0; j < 5; j++) {
+            if (board[i][j].type == '\0' || board[i][j].side != side) {
+                continue;
+            }
+
+            std::vector<MiniShogiMove> moves;
+            board[i][j].GetMoves(board, moves);
+            CullInvalidMoves(moves);
+            if (moves.size() == 0) continue;
+            allMoves[{i, j}] = moves;
+            foundMoves = true;
+        }
+    }
+
+    return foundMoves;
 }
 
 void MiniShogiGame::MoveCursor(sf::Vector2i dir) {
@@ -163,8 +216,7 @@ void MiniShogiGame::Confirm() {
         }
 
         currentMoves.clear();
-        currentPiece.GetMoves(board, currentMoves);
-        std::cout << currentMoves.size() << "\n";
+        currentMoves = allMoves[cursorPos];
         choosingMove = true;
     } else if (choosingMove) {
         auto move = PosToMove();
@@ -203,6 +255,67 @@ bool MiniShogiGame::PosInMoves(sf::Vector2i pos) {
     return false;
 }
 
+bool MiniShogiGame::PieceIsPromotable(char type) {
+    return !isupper(type);
+}
+
+void MiniShogiGame::CullInvalidMoves(std::vector<MiniShogiMove>& moves) {
+    miniShogiBoard b;
+
+    for (auto& move : moves) {
+        b = board;
+        PlayMoveOnBoard(move, b);
+        move.invalid = IsKingExposed(turn % 2, b);
+    }
+
+    moves.erase(std::remove_if(moves.begin(), moves.end(), 
+                [](const MiniShogiMove& move) {
+                return move.invalid;
+                }), moves.end());
+}
+
+bool MiniShogiGame::IsKingExposed(bool side, miniShogiBoard& board) {
+    std::vector<MiniShogiMove> moves;
+    sf::Vector2u kingPos;
+    for (int i = 0; i < 5; i++) {
+        for (int j = 0; j < 5; j++) {
+            if (board[i][j].type == '\0' || board[i][j].side == side) {
+                if (board[i][j].type == 'K') { kingPos = board[i][j].pos; }
+                continue;
+            }
+            
+            board[i][j].GetMoves(board, moves);
+        }
+    }
+
+    for (auto& move : moves) {
+        if (move.end.x == kingPos.x && move.end.y == kingPos.y) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void MiniShogiGame::PlayMoveOnBoard(MiniShogiMove& move, miniShogiBoard& board) {
+    sf::Vector2u start = move.start;
+    sf::Vector2u end = move.end;
+    MiniShogiPiece piece = board[start.x][start.y];
+    board[start.x][start.y].type = '\0';
+    
+    piece.pos = end;
+
+    // Promote piece
+    if (piece.side == PLAYER_1 && end.y == 4) {
+        piece.type = toupper(piece.type);
+    }
+    else if (piece.side == PLAYER_2 && end.y == 0) {
+        piece.type = toupper(piece.type);
+    }
+
+    board[end.x][end.y] = piece;
+}
+
+
 /*
  * MINISHOGI PIECE CODE
  * */
@@ -211,9 +324,24 @@ MiniShogiPiece::MiniShogiPiece() { side = PLAYER_1; }
 MiniShogiPiece::MiniShogiPiece(sf::Vector2u _pos, bool _side) : pos(_pos), side(_side) {}
 
 void MiniShogiPiece::GetMoves(miniShogiBoard& board, std::vector<MiniShogiMove>& moves) {
-    switch (type) {
+    switch (toupper(type)) {
         case 'K':
             GetKingMoves(board, moves, *this);
+            break;
+        case 'G':
+            GetGoldGeneralMoves(board, moves, *this);
+            break;
+        case 'S':
+            GetSilverGeneralMoves(board, moves, *this);
+            break;
+        case 'B':
+            GetBishopMoves(board, moves, *this);
+            break;
+        case 'R':
+            GetRookMoves(board, moves, *this);
+            break;
+        case 'P':
+            GetPawnMoves(board, moves, *this);
             break;
         default:
             break;
@@ -232,45 +360,34 @@ King::King(sf::Vector2u _pos, bool _side) {
     pos = _pos;
 }
 
-void GetKingMoves(miniShogiBoard& board, std::vector<MiniShogiMove>& moves, MiniShogiPiece& piece) {
-    auto pos = piece.pos;
-    bool side = piece.side;
-
-    bool onLeft = pos.x == 0;
-    bool onRight = pos.x == 4;
-    bool onTop = pos.y == 0;
-    bool onBottom = pos.y == 4;
-
-    if (!onLeft && (board[pos.x - 1][pos.y].type == '\0' || board[pos.x - 1][pos.y].side != side)) {
-        moves.push_back(MiniShogiMove(pos, { pos.x - 1, pos.y }));
-    }
-    if (!onRight && (board[pos.x + 1][pos.y].type == '\0' || board[pos.x + 1][pos.y].side != side)) {
-        moves.push_back(MiniShogiMove(pos, { pos.x + 1, pos.y }));
-    }
-
-    // Moves above
-    if (!onTop) {
-        if (board[pos.x][pos.y - 1].type == '\0' || board[pos.x][pos.y - 1].side != side) {
-            moves.push_back(MiniShogiMove(pos, { pos.x, pos.y - 1 }));
-        }
-        if (!onLeft && (board[pos.x - 1][pos.y - 1].type == '\0' || board[pos.x - 1][pos.y - 1].side != side)) {
-            moves.push_back(MiniShogiMove(pos, { pos.x - 1, pos.y - 1 }));
-        }
-        if (!onRight && (board[pos.x + 1][pos.y - 1].type == '\0' || board[pos.x + 1][pos.y - 1].side != side)) {
-            moves.push_back(MiniShogiMove(pos, { pos.x + 1, pos.y - 1 }));
-        }
-    }
-
-    // Moves below
-    if (!onBottom) {
-        if (board[pos.x][pos.y + 1].type == '\0' || board[pos.x][pos.y + 1].side != side) {
-            moves.push_back(MiniShogiMove(pos, { pos.x, pos.y + 1 }));
-        }
-        if (!onLeft && (board[pos.x - 1][pos.y + 1].type == '\0' || board[pos.x - 1][pos.y + 1].side != side)) {
-            moves.push_back(MiniShogiMove(pos, { pos.x - 1, pos.y + 1 }));
-        }
-        if (!onRight && (board[pos.x + 1][pos.y + 1].type == '\0' || board[pos.x + 1][pos.y + 1].side != side)) {
-            moves.push_back(MiniShogiMove(pos, { pos.x + 1, pos.y + 1 }));
-        }
-    }
+GoldGeneral::GoldGeneral(sf::Vector2u _pos, bool _side) {
+    type = 'G';
+    side = _side;
+    pos = _pos;
 }
+
+SilverGeneral::SilverGeneral(sf::Vector2u _pos, bool _side) {
+    type = 's';
+    side = _side;
+    pos = _pos;
+}
+
+Bishop::Bishop(sf::Vector2u _pos, bool _side) { 
+    type = 'b';
+    side = _side; 
+    pos = _pos;
+}
+
+Rook::Rook(sf::Vector2u _pos, bool _side) { 
+
+    type = 'r';
+    side = _side; 
+    pos = _pos;
+}
+
+Pawn::Pawn(sf::Vector2u _pos, bool _side) { 
+    type = 'p';
+    side = _side; 
+    pos = _pos;
+}
+
