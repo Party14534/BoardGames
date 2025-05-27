@@ -18,7 +18,7 @@ void GetPawnMoves(miniShogiBoard& board,
     }
 
     if (!onTop) {
-        sf::Vector2u end = piece.pos;
+        sf::Vector2i end = piece.pos;
         end.y += dir;
 
         if (board[end.x][end.y].type != '\0' &&
@@ -26,7 +26,7 @@ void GetPawnMoves(miniShogiBoard& board,
             return;
         }
 
-        MiniShogiMove move(piece.pos, end);
+        MiniShogiMove move(piece.pos, end, piece.side);
         moves.push_back(move);
     }
 }

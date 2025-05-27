@@ -18,41 +18,41 @@ void GetSilverGeneralMoves(miniShogiBoard& board,
     // Moves below
     if (!onBottom && piece.side == PLAYER_2) {
         if (board[pos.x][pos.y - 1].type == '\0' || board[pos.x][pos.y - 1].side != side) {
-            moves.push_back(MiniShogiMove(pos, { pos.x, pos.y - 1 }));
+            moves.push_back(MiniShogiMove(pos, { pos.x, pos.y - 1 }, piece.side));
         }
 
         if (!onLeft && (board[pos.x - 1][pos.y - 1].type == '\0' || board[pos.x - 1][pos.y - 1].side != side)) {
-            moves.push_back(MiniShogiMove(pos, { pos.x - 1, pos.y - 1 }));
+            moves.push_back(MiniShogiMove(pos, { pos.x - 1, pos.y - 1 }, piece.side));
         }
         if (!onRight && (board[pos.x + 1][pos.y - 1].type == '\0' || board[pos.x + 1][pos.y - 1].side != side)) {
-            moves.push_back(MiniShogiMove(pos, { pos.x + 1, pos.y - 1 }));
+            moves.push_back(MiniShogiMove(pos, { pos.x + 1, pos.y - 1 }, piece.side));
         }
     } else if (!onBottom) {
         if (!onLeft && (board[pos.x - 1][pos.y - 1].type == '\0' || board[pos.x - 1][pos.y - 1].side != side)) {
-            moves.push_back(MiniShogiMove(pos, { pos.x - 1, pos.y - 1 }));
+            moves.push_back(MiniShogiMove(pos, { pos.x - 1, pos.y - 1 }, piece.side));
         }
         if (!onRight && (board[pos.x + 1][pos.y - 1].type == '\0' || board[pos.x + 1][pos.y - 1].side != side)) {
-            moves.push_back(MiniShogiMove(pos, { pos.x + 1, pos.y - 1 }));
+            moves.push_back(MiniShogiMove(pos, { pos.x + 1, pos.y - 1 }, piece.side));
         }
     }
 
     // Moves above
     if (!onTop && piece.side == PLAYER_1) {
         if (board[pos.x][pos.y + 1].type == '\0' || board[pos.x][pos.y + 1].side != side) {
-            moves.push_back(MiniShogiMove(pos, { pos.x, pos.y + 1 }));
+            moves.push_back(MiniShogiMove(pos, { pos.x, pos.y + 1 }, piece.side));
         }
         if (!onLeft && (board[pos.x - 1][pos.y + 1].type == '\0' || board[pos.x - 1][pos.y + 1].side != side)) {
-            moves.push_back(MiniShogiMove(pos, { pos.x - 1, pos.y + 1 }));
+            moves.push_back(MiniShogiMove(pos, { pos.x - 1, pos.y + 1 }, piece.side));
         }
         if (!onRight && (board[pos.x + 1][pos.y + 1].type == '\0' || board[pos.x + 1][pos.y + 1].side != side)) {
-            moves.push_back(MiniShogiMove(pos, { pos.x + 1, pos.y + 1 }));
+            moves.push_back(MiniShogiMove(pos, { pos.x + 1, pos.y + 1 }, piece.side));
         }
     } else if (!onTop) {
         if (!onLeft && (board[pos.x - 1][pos.y + 1].type == '\0' || board[pos.x - 1][pos.y + 1].side != side)) {
-            moves.push_back(MiniShogiMove(pos, { pos.x - 1, pos.y + 1 }));
+            moves.push_back(MiniShogiMove(pos, { pos.x - 1, pos.y + 1 }, piece.side));
         }
         if (!onRight && (board[pos.x + 1][pos.y + 1].type == '\0' || board[pos.x + 1][pos.y + 1].side != side)) {
-            moves.push_back(MiniShogiMove(pos, { pos.x + 1, pos.y + 1 }));
+            moves.push_back(MiniShogiMove(pos, { pos.x + 1, pos.y + 1 }, piece.side));
         }
     }
 }

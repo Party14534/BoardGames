@@ -22,21 +22,22 @@ typedef std::vector<std::vector<MiniShogiPiece>> miniShogiBoard;
 
 class MiniShogiMove : public Move {
 public:
-    sf::Vector2u start;
-    sf::Vector2u end;
+    sf::Vector2i start;
+    sf::Vector2i end;
+    bool side;
     bool invalid = false;
 
-    MiniShogiMove(sf::Vector2u _start, sf::Vector2u _end);
+    MiniShogiMove(sf::Vector2i _start, sf::Vector2i _end, bool _side);
 };
 
 class MiniShogiPiece {
 public:
     char type = '\0';
     bool side;
-    sf::Vector2u pos;
+    sf::Vector2i pos;
 
     MiniShogiPiece();
-    MiniShogiPiece(sf::Vector2u _pos, bool _side);
+    MiniShogiPiece(sf::Vector2i _pos, bool _side);
     void GetMoves(miniShogiBoard& board, std::vector<MiniShogiMove>& moves);
 };
 
@@ -78,32 +79,32 @@ private:
 
 class King : public MiniShogiPiece {
 public:
-    King(sf::Vector2u _pos, bool _side);
+    King(sf::Vector2i _pos, bool _side);
 };
 
 class GoldGeneral : public MiniShogiPiece {
 public:
-    GoldGeneral(sf::Vector2u _pos, bool _side);
+    GoldGeneral(sf::Vector2i _pos, bool _side);
 };
 
 class SilverGeneral : public MiniShogiPiece {
 public:
-    SilverGeneral(sf::Vector2u _pos, bool _side);
+    SilverGeneral(sf::Vector2i _pos, bool _side);
 };
 
 class Bishop : public MiniShogiPiece {
 public:
-    Bishop(sf::Vector2u _pos, bool _side);
+    Bishop(sf::Vector2i _pos, bool _side);
 };
 
 class Rook : public MiniShogiPiece {
 public:
-    Rook(sf::Vector2u _pos, bool _side);
+    Rook(sf::Vector2i _pos, bool _side);
 };
 
 class Pawn : public MiniShogiPiece {
 public:
-    Pawn(sf::Vector2u _pos, bool _side);
+    Pawn(sf::Vector2i _pos, bool _side);
 };
 
 // PIECE MOVES

@@ -2,8 +2,8 @@
 
 void GetBishopMoves(miniShogiBoard& board, std::vector<MiniShogiMove>& moves, MiniShogiPiece& piece) {
     // Up-Left
-    sf::Vector2u end = piece.pos;
-    MiniShogiMove move(piece.pos, end);
+    sf::Vector2i end = piece.pos;
+    MiniShogiMove move(piece.pos, end, piece.side);
     while (true) {
         if (end.x == 0 || end.y == 4) break;
         

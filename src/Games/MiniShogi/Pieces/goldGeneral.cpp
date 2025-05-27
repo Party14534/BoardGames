@@ -11,24 +11,24 @@ void GetGoldGeneralMoves(miniShogiBoard& board,
     bool onBottom = pos.y == 0;
 
     if (!onLeft && (board[pos.x - 1][pos.y].type == '\0' || board[pos.x - 1][pos.y].side != side)) {
-        moves.push_back(MiniShogiMove(pos, { pos.x - 1, pos.y }));
+        moves.push_back(MiniShogiMove(pos, { pos.x - 1, pos.y }, piece.side));
     }
     if (!onRight && (board[pos.x + 1][pos.y].type == '\0' || board[pos.x + 1][pos.y].side != side)) {
-        moves.push_back(MiniShogiMove(pos, { pos.x + 1, pos.y }));
+        moves.push_back(MiniShogiMove(pos, { pos.x + 1, pos.y }, piece.side));
     }
 
     // Moves below
     if (!onBottom) {
         if (board[pos.x][pos.y - 1].type == '\0' || board[pos.x][pos.y - 1].side != side) {
-            moves.push_back(MiniShogiMove(pos, { pos.x, pos.y - 1 }));
+            moves.push_back(MiniShogiMove(pos, { pos.x, pos.y - 1 }, piece.side));
         }
 
         if (piece.side == PLAYER_2) {
             if (!onLeft && (board[pos.x - 1][pos.y - 1].type == '\0' || board[pos.x - 1][pos.y - 1].side != side)) {
-                moves.push_back(MiniShogiMove(pos, { pos.x - 1, pos.y - 1 }));
+                moves.push_back(MiniShogiMove(pos, { pos.x - 1, pos.y - 1 }, piece.side));
             }
             if (!onRight && (board[pos.x + 1][pos.y - 1].type == '\0' || board[pos.x + 1][pos.y - 1].side != side)) {
-                moves.push_back(MiniShogiMove(pos, { pos.x + 1, pos.y - 1 }));
+                moves.push_back(MiniShogiMove(pos, { pos.x + 1, pos.y - 1 }, piece.side));
             }
         }
     }
@@ -36,15 +36,15 @@ void GetGoldGeneralMoves(miniShogiBoard& board,
     // Moves above
     if (!onTop) {
         if (board[pos.x][pos.y + 1].type == '\0' || board[pos.x][pos.y + 1].side != side) {
-            moves.push_back(MiniShogiMove(pos, { pos.x, pos.y + 1 }));
+            moves.push_back(MiniShogiMove(pos, { pos.x, pos.y + 1 }, piece.side));
         }
 
         if (piece.side == PLAYER_1) {
             if (!onLeft && (board[pos.x - 1][pos.y + 1].type == '\0' || board[pos.x - 1][pos.y + 1].side != side)) {
-                moves.push_back(MiniShogiMove(pos, { pos.x - 1, pos.y + 1 }));
+                moves.push_back(MiniShogiMove(pos, { pos.x - 1, pos.y + 1 }, piece.side));
             }
             if (!onRight && (board[pos.x + 1][pos.y + 1].type == '\0' || board[pos.x + 1][pos.y + 1].side != side)) {
-                moves.push_back(MiniShogiMove(pos, { pos.x + 1, pos.y + 1 }));
+                moves.push_back(MiniShogiMove(pos, { pos.x + 1, pos.y + 1 }, piece.side));
             }
         }
     }

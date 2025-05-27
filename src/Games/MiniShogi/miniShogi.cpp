@@ -1,9 +1,12 @@
 #include "miniShogi.h"
+#include <SFML/Graphics/CircleShape.hpp>
 #include <algorithm>
 
 /*
  * GAME LOGIC
  * */
+
+sf::Color tileLight(0xA59657FF);
 
 MiniShogiGame::MiniShogiGame() {
     board = std::vector<std::vector<MiniShogiPiece>>(5, std::vector<MiniShogiPiece>(5));
@@ -55,6 +58,11 @@ void MiniShogiGame::Draw(sf::RenderWindow& win) {
     tile.setOrigin({SQUARE_SIZE / 2, SQUARE_SIZE / 2});
     tile.setOutlineThickness(5.f);
     tile.setOutlineColor(sf::Color::Black);
+
+    sf::CircleShape moveCircle(SQUARE_SIZE / 2.5f);
+    moveCircle.setOrigin(SQUARE_SIZE / 2.5f, SQUARE_SIZE / 2.5f);
+    moveCircle.setFillColor(sf::Color(0,0,0,100));
+
     sf::Font font;
     if (!font.loadFromFile("./src/res/ARIAL.TTF")) {
         std::cout << "faild to load font\n";
@@ -75,15 +83,21 @@ void MiniShogiGame::Draw(sf::RenderWindow& win) {
                     float(-1.f * j * (SQUARE_SIZE) + SQUARE_SIZE / 2) });
             tile.move(offset);
 
-            if (choosingMove && PosInMoves({i, j})) {
-                tile.setFillColor(sf::Color(0xA59657FF));
+            if ((j * 5 + i) % 2){
+                tile.setFillColor(sf::Color::White);
             } else {
-                tile.setFillColor(sf::Color(0xF5C687FF));
+                tile.setFillColor(tileLight);
             }
-
             win.draw(tile);
 
-            if (i == playerCursorPos[currentPlayer].x && j == playerCursorPos[currentPlayer].y) {
+            if (choosingMove && PosInMoves({i, j})) {
+                moveCircle.setPosition(tile.getPosition());
+                win.draw(moveCircle);
+            } 
+
+
+            if (i == playerCursorPos[currentPlayer].x && j == playerCursorPos[currentPlayer].y
+                    && !inCaptured) {
                 cursor.setPosition({tile.getPosition().x, tile.getPosition().y + 5.f});
             }
 
@@ -101,19 +115,81 @@ void MiniShogiGame::Draw(sf::RenderWindow& win) {
         }
     }
 
+    // Draw captured pieces
+    for (int i = 0; i < 2; i++) {
+        float xPos = 0;
+        float dir = 1;
+        float yOffset = 0;
+        if (!i) {
+            xPos = float(SQUARE_SIZE * 6 + SQUARE_SIZE / 2);
+            dir *= -1.f;
+        } else {
+            xPos = float(-SQUARE_SIZE - SQUARE_SIZE / 2);
+            yOffset = float(-SQUARE_SIZE * 4);
+        }
+
+        for (int j = 0; j < capturedPieces[i].size(); j++) {
+
+            tile.setPosition({ xPos,
+                    float(dir * j * (SQUARE_SIZE) + SQUARE_SIZE / 2) + yOffset });
+            tile.move(offset);
+
+            if ((i + j) % 2){
+                tile.setFillColor(sf::Color::White);
+            } else {
+                tile.setFillColor(tileLight);
+            }
+
+            win.draw(tile);
+
+            if (j == capturedCursorIndex && i == currentPlayer && inCaptured) {
+                cursor.setPosition({tile.getPosition().x, tile.getPosition().y + 5.f});
+            }
+
+            text.setString(capturedPieces[i][j].type);
+            sf::Color pieceColor = (capturedPieces[i][j].side) ? sf::Color::Blue : sf::Color::Red;
+            text.setFillColor(pieceColor);
+
+            sf::FloatRect rect = text.getLocalBounds();
+            text.setOrigin(rect.left + rect.width/2.f,
+                    rect.top + rect.height / 2.f);
+            text.setPosition(tile.getPosition());
+            win.draw(text);
+            
+        }
+    }
+
     win.draw(cursor);
 }
 
 void MiniShogiGame::PlayMove(Move* move) {
     MiniShogiMove* minimove = (MiniShogiMove*)move;
 
-    sf::Vector2u start = minimove->start;
-    sf::Vector2u end = minimove->end;
-    MiniShogiPiece piece = board[start.x][start.y];
-    board[start.x][start.y].type = '\0';
+    sf::Vector2i start = minimove->start;
+    sf::Vector2i end = minimove->end;
+    MiniShogiPiece piece;
+    if (start.x == 5 || start.x == -1) {
+        int index = minimove->start.y;
+        piece = capturedPieces[currentPlayer][index];
+        capturedPieces[currentPlayer].erase(capturedPieces[currentPlayer].begin() + index);
+        for (int i = 0; i < capturedPieces[currentPlayer].size(); i++) {
+            capturedPieces[currentPlayer][i].pos.y = i;
+        }
+    } else {
+        piece = board[start.x][start.y];
+        board[start.x][start.y].type = '\0';
+    }
     
     if (board[end.x][end.y].type != '\0') {
-        capturedPieces[currentPlayer].push_back(board[end.x][end.y]);
+        MiniShogiPiece captured = board[end.x][end.y];
+        captured.side = piece.side;
+        if (captured.type != 'G') {
+            captured.type = tolower(captured.type);
+        }
+        int xPos = (piece.side) ? 5 : -1;
+        captured.pos.x = xPos;
+        captured.pos.y = capturedPieces[currentPlayer].size();
+        capturedPieces[currentPlayer].push_back(captured);
     }
 
     piece.pos = end;
@@ -140,7 +216,7 @@ void MiniShogiGame::PlayMove(Move* move) {
         exit(0);
     }
 
-    if (turn % 2 == 0) {
+    if (turn % 2 == 5) {
         MiniShogiMove move = MinOppMoves();
         PlayMove(&move);
     }
@@ -163,6 +239,26 @@ int MiniShogiGame::GetAllMoves(miniShogiBoard& board, bool side) {
         }
     }
 
+    // Get drop moves
+    std::cout << capturedPieces[0].size() << " " << capturedPieces[1].size() << "\n";
+    for (auto& piece : capturedPieces[currentPlayer]) {
+        std::vector<MiniShogiMove> moves;
+        for (int i = 0; i < 5; i++) {
+            for (int j = 0; j < 5; j++) {
+                // TODO: Implement pawn drop rules and prevent dropped pieces
+                // from promoting
+                if (board[i][j].type != '\0') continue;
+
+                moves.push_back(MiniShogiMove(piece.pos, {i, j}, piece.side));
+            }
+        }
+
+        CullInvalidMoves(moves);
+        if (moves.size() == 0) continue;
+        allMoves[{piece.pos}] = moves;
+        moveCount += moves.size();
+    }
+    
     return moveCount;
 }
 
@@ -199,11 +295,13 @@ void MiniShogiGame::MoveCursor(sf::Vector2i dir) {
                 playerCursorPos[currentPlayer].x = 0;
             }
         }
+        
+        if (currentPlayer) dir.y *= -1.f;
 
         capturedCursorIndex += dir.y;
         int yMax = (currentPlayer) ? capturedPieces[currentPlayer].size()
             : capturedPieces[currentPlayer].size();
-        capturedCursorIndex = std::clamp(capturedCursorIndex, 0, yMax);
+        capturedCursorIndex = std::clamp(capturedCursorIndex, 0, yMax - 1);
         return;
     }
     
@@ -228,8 +326,15 @@ void MiniShogiGame::MoveCursor(sf::Vector2i dir) {
 }
 
 void MiniShogiGame::Confirm() {
-    // Not inCaptured for now
-    if (!choosingMove && !inCaptured) {
+    if (inCaptured) {
+        int xPos = (turn % 2) ? 5 : -1;
+        int yPos = capturedPieces[currentPlayer][currentPlayer].pos.y;
+
+        currentMoves.clear();
+        currentMoves = allMoves[{xPos, yPos}];
+        choosingMove = true;
+        std::cout << currentMoves.size() << "\n";
+    } else if (!choosingMove && !inCaptured) {
         sf::Vector2i cursorPos = playerCursorPos[currentPlayer];
         MiniShogiPiece currentPiece = board[cursorPos.x][cursorPos.y];
         
@@ -250,7 +355,7 @@ void MiniShogiGame::Confirm() {
         }
 
         PlayMove(&move.value());
-    }
+    } 
 }
 
 void MiniShogiGame::Cancel() {
@@ -299,7 +404,7 @@ void MiniShogiGame::CullInvalidMoves(std::vector<MiniShogiMove>& moves) {
 
 bool MiniShogiGame::IsKingExposed(bool side, miniShogiBoard& board) {
     std::vector<MiniShogiMove> moves;
-    sf::Vector2u kingPos;
+    sf::Vector2i kingPos;
     for (int i = 0; i < 5; i++) {
         for (int j = 0; j < 5; j++) {
             if (board[i][j].type == '\0' || board[i][j].side == side) {
@@ -320,10 +425,16 @@ bool MiniShogiGame::IsKingExposed(bool side, miniShogiBoard& board) {
 }
 
 void MiniShogiGame::PlayMoveOnBoard(MiniShogiMove& move, miniShogiBoard& board) {
-    sf::Vector2u start = move.start;
-    sf::Vector2u end = move.end;
-    MiniShogiPiece piece = board[start.x][start.y];
-    board[start.x][start.y].type = '\0';
+    sf::Vector2i start = move.start;
+    sf::Vector2i end = move.end;
+
+    MiniShogiPiece piece;
+    if (start.x == 5 || start.x == -1) {
+        piece = capturedPieces[!move.side][move.start.y];
+    } else {
+        piece = board[start.x][start.y];
+        board[start.x][start.y].type = '\0';
+    }
     
     piece.pos = end;
 
@@ -344,7 +455,7 @@ void MiniShogiGame::PlayMoveOnBoard(MiniShogiMove& move, miniShogiBoard& board) 
  * */
 
 MiniShogiPiece::MiniShogiPiece() { side = PLAYER_1; }
-MiniShogiPiece::MiniShogiPiece(sf::Vector2u _pos, bool _side) : pos(_pos), side(_side) {}
+MiniShogiPiece::MiniShogiPiece(sf::Vector2i _pos, bool _side) : pos(_pos), side(_side) {}
 
 void MiniShogiPiece::GetMoves(miniShogiBoard& board, std::vector<MiniShogiMove>& moves) {
     switch (toupper(type)) {
@@ -371,44 +482,44 @@ void MiniShogiPiece::GetMoves(miniShogiBoard& board, std::vector<MiniShogiMove>&
     }
 }
 
-MiniShogiMove::MiniShogiMove(sf::Vector2u _start, sf::Vector2u _end) : start(_start), end(_end) {}
+MiniShogiMove::MiniShogiMove(sf::Vector2i _start, sf::Vector2i _end, bool _side) : start(_start), end(_end), side(_side) {}
 
 /*
  * PIECE DEFINITIONS
  */
 
-King::King(sf::Vector2u _pos, bool _side) { 
+King::King(sf::Vector2i _pos, bool _side) { 
     type = 'K';
     side = _side; 
     pos = _pos;
 }
 
-GoldGeneral::GoldGeneral(sf::Vector2u _pos, bool _side) {
+GoldGeneral::GoldGeneral(sf::Vector2i _pos, bool _side) {
     type = 'G';
     side = _side;
     pos = _pos;
 }
 
-SilverGeneral::SilverGeneral(sf::Vector2u _pos, bool _side) {
+SilverGeneral::SilverGeneral(sf::Vector2i _pos, bool _side) {
     type = 's';
     side = _side;
     pos = _pos;
 }
 
-Bishop::Bishop(sf::Vector2u _pos, bool _side) { 
+Bishop::Bishop(sf::Vector2i _pos, bool _side) { 
     type = 'b';
     side = _side; 
     pos = _pos;
 }
 
-Rook::Rook(sf::Vector2u _pos, bool _side) { 
+Rook::Rook(sf::Vector2i _pos, bool _side) { 
 
     type = 'r';
     side = _side; 
     pos = _pos;
 }
 
-Pawn::Pawn(sf::Vector2u _pos, bool _side) { 
+Pawn::Pawn(sf::Vector2i _pos, bool _side) { 
     type = 'p';
     side = _side; 
     pos = _pos;

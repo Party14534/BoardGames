@@ -2,9 +2,9 @@
 
 MiniShogiMove MiniShogiGame::MinOppMoves() {
     miniShogiBoard b;
-    MiniShogiMove finalMove({0,0}, {0,0});
-    int moveCount = INT32_MAX;
     bool side = turn % 2;
+    MiniShogiMove finalMove({0,0}, {0,0}, side);
+    int moveCount = INT32_MAX;
 
     for (auto& tuple : allMoves) {
         for (auto& move : tuple.second) {
