@@ -168,7 +168,9 @@ void MiniShogiGame::PlayMove(Move* move) {
     sf::Vector2i start = minimove->start;
     sf::Vector2i end = minimove->end;
     MiniShogiPiece piece;
+    bool dropMove = false;
     if (start.x == 5 || start.x == -1) {
+        dropMove = true;
         int index = minimove->start.y;
         piece = capturedPieces[currentPlayer][index];
         capturedPieces[currentPlayer].erase(capturedPieces[currentPlayer].begin() + index);
@@ -195,10 +197,10 @@ void MiniShogiGame::PlayMove(Move* move) {
     piece.pos = end;
 
     // Promote piece
-    if (piece.side == PLAYER_1 && end.y == 4) {
+    if (piece.side == PLAYER_1 && end.y == 4 && !dropMove) {
         piece.type = toupper(piece.type);
     }
-    else if (piece.side == PLAYER_2 && end.y == 0) {
+    else if (piece.side == PLAYER_2 && end.y == 0 && !dropMove) {
         piece.type = toupper(piece.type);
     }
 
@@ -213,11 +215,12 @@ void MiniShogiGame::PlayMove(Move* move) {
     if (moveCount == 0) {
         std::string player = (turn % 2) ? "Red" : "Blue";
         std::cout << player << " player wins!\n";
+        PrintBoard();
         exit(0);
     }
 
-    if (turn % 2 == 5) {
-        MiniShogiMove move = MinOppMoves();
+    if (turn % 2 == 0) {
+        MiniShogiMove move = MiniMax(1);
         PlayMove(&move);
     }
 }
@@ -240,14 +243,16 @@ int MiniShogiGame::GetAllMoves(miniShogiBoard& board, bool side) {
     }
 
     // Get drop moves
-    std::cout << capturedPieces[0].size() << " " << capturedPieces[1].size() << "\n";
     for (auto& piece : capturedPieces[currentPlayer]) {
         std::vector<MiniShogiMove> moves;
+        int lastRow = -1;
+        if (piece.type == 'p') {
+            lastRow = (piece.side) ? 4 : 0; 
+        }
+
         for (int i = 0; i < 5; i++) {
             for (int j = 0; j < 5; j++) {
-                // TODO: Implement pawn drop rules and prevent dropped pieces
-                // from promoting
-                if (board[i][j].type != '\0') continue;
+                if (board[i][j].type != '\0' || j == lastRow) continue;
 
                 moves.push_back(MiniShogiMove(piece.pos, {i, j}, piece.side));
             }
@@ -328,12 +333,11 @@ void MiniShogiGame::MoveCursor(sf::Vector2i dir) {
 void MiniShogiGame::Confirm() {
     if (inCaptured) {
         int xPos = (turn % 2) ? 5 : -1;
-        int yPos = capturedPieces[currentPlayer][currentPlayer].pos.y;
+        int yPos = capturedPieces[currentPlayer][capturedCursorIndex].pos.y;
 
         currentMoves.clear();
         currentMoves = allMoves[{xPos, yPos}];
         choosingMove = true;
-        std::cout << currentMoves.size() << "\n";
     } else if (!choosingMove && !inCaptured) {
         sf::Vector2i cursorPos = playerCursorPos[currentPlayer];
         MiniShogiPiece currentPiece = board[cursorPos.x][cursorPos.y];
@@ -447,6 +451,16 @@ void MiniShogiGame::PlayMoveOnBoard(MiniShogiMove& move, miniShogiBoard& board) 
     }
 
     board[end.x][end.y] = piece;
+}
+
+void MiniShogiGame::PrintBoard() {
+    for (int j = 4; j >= 0; j--) {
+        for (int i = 0; i < 5; i++) {
+            char c = (board[i][j].type == '\0') ? ' ' : board[i][j].type;
+            char space = (i == 4) ? '\n' : ' ';
+            std::cout << c << space;
+        }
+    }
 }
 
 

@@ -49,6 +49,7 @@ public:
     void MoveCursor(sf::Vector2i dir) override;
     void Confirm() override;
     void Cancel() override;
+    void PrintBoard();
 
 private:
     miniShogiBoard board;
@@ -74,7 +75,10 @@ private:
     void PlayMoveOnBoard(MiniShogiMove& move, miniShogiBoard& board);
 
     // AIs
+    int ScoreBoard(miniShogiBoard& board, bool side);
+    int GetPieceScore(char type);
     MiniShogiMove MinOppMoves();
+    MiniShogiMove MiniMax(int depth);
 };
 
 class King : public MiniShogiPiece {
