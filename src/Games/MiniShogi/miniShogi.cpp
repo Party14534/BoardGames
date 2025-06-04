@@ -215,7 +215,7 @@ void MiniShogiGame::PlayMove(Move* move) {
     if (moveCount == 0) {
         std::string player = (turn % 2) ? "Red" : "Blue";
         std::cout << player << " player wins!\n";
-        PrintBoard();
+        PrintBoard(board);
         exit(0);
     }
 
@@ -235,7 +235,7 @@ int MiniShogiGame::GetAllMoves(miniShogiBoard& board, bool side) {
 
             std::vector<MiniShogiMove> moves;
             board[i][j].GetMoves(board, moves);
-            CullInvalidMoves(moves);
+            CullInvalidMoves(moves, side);
             if (moves.size() == 0) continue;
             allMoves[{i, j}] = moves;
             moveCount += moves.size();
@@ -246,19 +246,29 @@ int MiniShogiGame::GetAllMoves(miniShogiBoard& board, bool side) {
     for (auto& piece : capturedPieces[currentPlayer]) {
         std::vector<MiniShogiMove> moves;
         int lastRow = -1;
+        int dir = (side) ? 1 : -1;
         if (piece.type == 'p') {
-            lastRow = (piece.side) ? 4 : 0; 
+            lastRow = (side) ? 4 : 0; 
         }
 
         for (int i = 0; i < 5; i++) {
             for (int j = 0; j < 5; j++) {
                 if (board[i][j].type != '\0' || j == lastRow) continue;
+                if (piece.type == 'p' && board[i][j + dir].type == 'K') {
+                    miniShogiBoard b = board;
+                    MiniShogiMove move(piece.pos, {i, j}, side);
+                    PlayMoveOnBoard(move, b);
+                    PrintBoard(b);
+                    int num = GetCountOfMoves(b, !side);
+                    std::cout << num << "\n";
+                    if (!num) continue;
+                }
 
                 moves.push_back(MiniShogiMove(piece.pos, {i, j}, piece.side));
             }
         }
 
-        CullInvalidMoves(moves);
+        CullInvalidMoves(moves, side);
         if (moves.size() == 0) continue;
         allMoves[{piece.pos}] = moves;
         moveCount += moves.size();
@@ -277,8 +287,12 @@ int MiniShogiGame::GetCountOfMoves(miniShogiBoard& board, bool side) {
 
             std::vector<MiniShogiMove> moves;
             board[i][j].GetMoves(board, moves);
-            CullInvalidMoves(moves);
+            CullInvalidMoves(moves, side);
             if (moves.size() == 0) continue;
+            for (auto& move : moves) {
+                std::cout << move.start.x << "," << move.start.y << " " <<
+                    move.end.x << "," << move.end.y << "\n";
+            }
             moveCount += moves.size();
         }
     }
@@ -391,13 +405,13 @@ bool MiniShogiGame::PieceIsPromotable(char type) {
     return !isupper(type);
 }
 
-void MiniShogiGame::CullInvalidMoves(std::vector<MiniShogiMove>& moves) {
+void MiniShogiGame::CullInvalidMoves(std::vector<MiniShogiMove>& moves, bool side) {
     miniShogiBoard b;
 
     for (auto& move : moves) {
         b = board;
         PlayMoveOnBoard(move, b);
-        move.invalid = IsKingExposed(turn % 2, b);
+        move.invalid = IsKingExposed(side, b);
     }
 
     moves.erase(std::remove_if(moves.begin(), moves.end(), 
@@ -453,7 +467,7 @@ void MiniShogiGame::PlayMoveOnBoard(MiniShogiMove& move, miniShogiBoard& board) 
     board[end.x][end.y] = piece;
 }
 
-void MiniShogiGame::PrintBoard() {
+void MiniShogiGame::PrintBoard(miniShogiBoard& board) {
     for (int j = 4; j >= 0; j--) {
         for (int i = 0; i < 5; i++) {
             char c = (board[i][j].type == '\0') ? ' ' : board[i][j].type;

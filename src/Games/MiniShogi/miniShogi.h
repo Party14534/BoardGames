@@ -49,7 +49,7 @@ public:
     void MoveCursor(sf::Vector2i dir) override;
     void Confirm() override;
     void Cancel() override;
-    void PrintBoard();
+    void PrintBoard(miniShogiBoard& board);
 
 private:
     miniShogiBoard board;
@@ -68,7 +68,7 @@ private:
     std::optional<MiniShogiMove> PosToMove();
     bool PosInMoves(sf::Vector2i pos);
     bool PieceIsPromotable(char type);
-    void CullInvalidMoves(std::vector<MiniShogiMove>& moves);
+    void CullInvalidMoves(std::vector<MiniShogiMove>& moves, bool side);
     bool IsKingExposed(bool side, miniShogiBoard& board);
     std::vector<std::vector<bool>> GetAttackingBitmask(bool side);
     void copyMiniShogiBoard(miniShogiBoard& board, miniShogiBoard& src);
